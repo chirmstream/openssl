@@ -1,26 +1,40 @@
-#!/usr/local/bin/perl
+#! /usr/bin/env perl
+# Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License 2.0 (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 
 $L="edi";
 $R="esi";
 
-sub des_encrypt3
+sub DES_encrypt3
 	{
 	local($name,$enc)=@_;
 
-	&function_begin($name,4,"");
+	&function_begin_B($name,"");
+	&push("ebx");
+	&mov("ebx",&wparam(0));
+
+	&push("ebp");
+	&push("esi");
+
+	&push("edi");
 
 	&comment("");
 	&comment("Load the data words");
-	&mov("ebx",&wparam(0));
 	&mov($L,&DWP(0,"ebx","",0));
 	&mov($R,&DWP(4,"ebx","",0));
+	&stack_push(3);
 
 	&comment("");
 	&comment("IP");
 	&IP_new($L,$R,"edx",0);
 
 	# put them back
-	
+
 	if ($enc)
 		{
 		&mov(&DWP(4,"ebx","",0),$R);
@@ -37,21 +51,21 @@ sub des_encrypt3
 		 &mov("edi",&wparam(2));
 		 &mov("eax",&wparam(3));
 		}
-	&push(($enc)?"1":"0");
-	&push("eax");
-	&push("ebx");
-	&call("des_encrypt2");
-	&push(($enc)?"0":"1");
-	&push("edi");
-	&push("ebx");
-	&call("des_encrypt2");
-	&push(($enc)?"1":"0");
-	&push("esi");
-	&push("ebx");
-	&call("des_encrypt2");
+	&mov(&swtmp(2),	(DWC(($enc)?"1":"0")));
+	&mov(&swtmp(1),	"eax");
+	&mov(&swtmp(0),	"ebx");
+	&call("DES_encrypt2");
+	&mov(&swtmp(2),	(DWC(($enc)?"0":"1")));
+	&mov(&swtmp(1),	"edi");
+	&mov(&swtmp(0),	"ebx");
+	&call("DES_encrypt2");
+	&mov(&swtmp(2),	(DWC(($enc)?"1":"0")));
+	&mov(&swtmp(1),	"esi");
+	&mov(&swtmp(0),	"ebx");
+	&call("DES_encrypt2");
 
+	&stack_pop(3);
 	&mov($L,&DWP(0,"ebx","",0));
-	&add("esp",36);
 	&mov($R,&DWP(4,"ebx","",0));
 
 	&comment("");
@@ -61,7 +75,12 @@ sub des_encrypt3
 	&mov(&DWP(0,"ebx","",0),"eax");
 	&mov(&DWP(4,"ebx","",0),$R);
 
-	&function_end($name);
+	&pop("edi");
+	&pop("esi");
+	&pop("ebp");
+	&pop("ebx");
+	&ret();
+	&function_end_B($name);
 	}
 
 
